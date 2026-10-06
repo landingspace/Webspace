@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joy Cafe - Peaceful Dining</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom Configuration for Tailwind to match Earthy tones -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            terracotta: '#D0604A',
+                            sage: '#8F9B7A',
+                            wood: '#8B5A2B',
+                            sand: '#F5F0E6',
+                            dark: '#2D2A26'
+                        }
+                    },
+                    animation: {
+                        'fade-in-up': 'fadeInUp 0.8s ease-out forwards',
+                        'scroll': 'scroll 20s linear infinite'
+                    },
+                    keyframes: {
+                        fadeInUp: {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        scroll: {
+                            '0%': { transform: 'translateX(0)' },
+                            '100%': { transform: 'translateX(-50%)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F5F0E6; /* brand-sand */
+            color: #2D2A26; /* brand-dark */
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        /* Subtle scroll animation utility */
+        .reveal-on-scroll {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease-out;
+        }
+        
+        .reveal-on-scroll.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Carousel specific styles */
+        .carousel-container {
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+        }
+        
+        .carousel-track {
+            display: inline-flex;
+            animation: scroll 40s linear infinite;
+        }
+        
+        .carousel-track:hover {
+            animation-play-state: paused;
+        }
+
+        .testimonial-card {
+            display: inline-block;
+            white-space: normal;
+        }
+        
+        /* Language dropdown styling */
+        .lang-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 50;
+        }
+        
+        .lang-dropdown.show {
+            display: block;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Sticky Header Navigation -->
+    <nav class="fixed w-full top-0 z-40 bg-brand-sand/90 backdrop-blur-md border-b border-brand-sage/20 transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20 items-center">
+                
+                <!-- Logo -->
+                <div class="flex-shrink-0 flex items-center">
+                    <a href="#" class="text-2xl font-bold text-brand-terracotta tracking-tight" data-i18n="nav_title">Joy Cafe</a>
+                </div>
+
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex space-x-8 items-center">
+                    <a href="#about" class="text-brand-dark hover:text-brand-terracotta transition-colors font-medium" data-i18n="nav_about">About</a>
+                    <a href="#menu" class="text-brand-dark hover:text-brand-terracotta transition-colors font-medium" data-i18n="nav_menu">Menu</a>
+                    <a href="#events" class="text-brand-dark hover:text-brand-terracotta transition-colors font-medium" data-i18n="nav_events">Events</a>
+                    <a href="#location" class="text-brand-dark hover:text-brand-terracotta transition-colors font-medium" data-i18n="nav_location">Location</a>
+                </div>
+
+                <!-- Right Side: Audio & Language -->
+                <div class="flex items-center space-x-4">
+                    
+                    <!-- Music Player -->
+                    <div class="flex items-center bg-white/50 rounded-full px-3 py-1.5 shadow-sm border border-brand-sage/20">
+                        <button id="musicToggle" class="flex items-center justify-center w-8 h-8 rounded-full bg-brand-sage text-white hover:bg-brand-sage/80 transition-colors focus:outline-none">
+                            <!-- Play Icon (SVG) -->
+                            <svg id="icon-play" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                            </svg>
+                            <!-- Pause Icon (SVG) - Hidden initially -->
+                            <svg id="icon-pause" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 hidden" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <audio id="bgMusic" loop preload="none">
+                            <!-- Using a generic public domain/creative commons lo-fi stream or file. 
+                                 Note: direct stream URLs often have CORS issues. Using a reliable mp3 placeholder for demo purposes. -->
+                            <source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3" type="audio/mpeg">
+                        </audio>
+                    </div>
+
+                    <!-- Language Switcher -->
+                    <div class="relative">
+                        <button id="langBtn" class="flex items-center space-x-1 bg-white px-3 py-2 rounded-md shadow-sm border border-gray-200 hover:bg-gray-50 focus:outline-none text-sm font-medium">
+                            <span id="currentLangFlag">🇬🇧</span>
+                            <span id="currentLangText">EN</span>
+                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        
+                        <div id="langMenu" class="lang-dropdown w-32 py-1 mt-1 border border-gray-100">
+                            <button onclick="setLanguage('en')" class="w-full text-left px-4 py-2 text-sm hover:bg-brand-sand transition-colors flex items-center space-x-2">
+                                <span>🇬🇧</span> <span>English</span>
+                            </button>
+                            <button onclick="setLanguage('hi')" class="w-full text-left px-4 py-2 text-sm hover:bg-brand-sand transition-colors flex items-center space-x-2">
+                                <span>🇮🇳</span> <span>हिंदी</span>
+                            </button>
+                            <button onclick="setLanguage('brx')" class="w-full text-left px-4 py-2 text-sm hover:bg-brand-sand transition-colors flex items-center space-x-2">
+                                <span>🇮🇳</span> <span>Bodo</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Mobile Menu Button (Hamburger) -->
+                    <div class="md:hidden flex items-center">
+                        <button id="mobileMenuBtn" class="text-brand-dark hover:text-brand-terracotta focus:outline-none">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobileMenu" class="md:hidden hidden bg-white border-t border-gray-100 shadow-lg absolute w-full">
+            <div class="px-4 pt-2 pb-4 space-y-1">
+                <a href="#about" class="block px-3 py-2 rounded-md text-base font-medium text-brand-dark hover:bg-brand-sand hover:text-brand-terracotta" data-i18n="nav_about">About</a>
+                <a href="#menu" class="block px-3 py-2 rounded-md text-base font-medium text-brand-dark hover:bg-brand-sand hover:text-brand-terracotta" data-i18n="nav_menu">Menu</a>
+                <a href="#events" class="block px-3 py-2 rounded-md text-base font-medium text-brand-dark hover:bg-brand-sand hover:text-brand-terracotta" data-i18n="nav_events">Events</a>
+                <a href="#location" class="block px-3 py-2 rounded-md text-base font-medium text-brand-dark hover:bg-brand-sand hover:text-brand-terracotta" data-i18n="nav_location">Location</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 1. Hero Section -->
+    <header class="relative h-screen flex items-center justify-center pt-20">
+        <!-- Background Image with Overlay -->
+        <div class="absolute inset-0 z-0">
+            <img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=1920&q=80" alt="Cafe Background" class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-brand-dark/40 mix-blend-multiply"></div>
+        </div>
+        
+        <!-- Content -->
+        <div class="relative z-10 text-center px-4 max-w-4xl mx-auto animate-fade-in-up">
+            <h1 class="text-5xl md:text-7xl font-bold text-white mb-6 drop-shadow-lg font-serif" data-i18n="hero_headline">
+                Welcome to Joy Cafe.
+            </h1>
+            <p class="text-xl md:text-2xl text-white/90 mb-8 font-light drop-shadow-md" data-i18n="hero_subheadline">
+                Experience peace, nature, and exceptional food away from the city.
+            </p>
+            <a href="#menu" class="inline-block bg-brand-terracotta text-white font-semibold px-8 py-3 rounded-full hover:bg-brand-wood transition-colors duration-300 shadow-lg" data-i18n="hero_button">
+                Discover Our Menu
+            </a>
+        </div>
+    </header>
+
+    <!-- 2. About Us -->
+    <section id="about" class="py-20 px-4 sm:px-6 lg:px-8 bg-brand-sand reveal-on-scroll">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex flex-col lg:flex-row items-center gap-12">
+                
+                <!-- Image -->
+                <div class="w-full lg:w-1/2 rounded-2xl overflow-hidden shadow-2xl relative">
+                    <img src="https://landingspace.github.io/Webspace/JoyCafe/src/images/Family_Dena.jpeg" alt="Dena, Owner of Joy Cafe" class="w-full h-auto object-cover transform hover:scale-105 transition-transform duration-700">
+                    <!-- Decorative element -->
+                    <div class="absolute -bottom-4 -right-4 w-24 h-24 bg-brand-sage/20 rounded-full z-[-1]"></div>
+                </div>
+
+                <!-- Text Content -->
+                <div class="w-full lg:w-1/2">
+                    <h2 class="text-sm font-bold text-brand-terracotta uppercase tracking-wider mb-2" data-i18n="about_tag">Our Story</h2>
+                    <h3 class="text-3xl md:text-4xl font-bold text-brand-dark mb-6" data-i18n="about_title">Meet Dena, The Heart of Joy Cafe</h3>
+                    <div class="space-y-4 text-brand-dark/80 leading-relaxed text-lg">
+                        <p data-i18n="about_p1">
+                            Dena is a passionate cook whose love for the culinary arts began in his childhood. For him, cooking isn't just a profession; it's a profound joy found in feeding people and bringing smiles to their faces.
+                        </p>
+                        <p data-i18n="about_p2">
+                            Together with his wife, they dreamt of creating a sanctuary away from the hustle and bustle of city life. They built Joy Cafe as a haven where guests can truly experience peace.
+                        </p>
+                        <p data-i18n="about_p3">
+                            Here, surrounded by nature, you and your family can eat well, unwind, and enjoy good music in a relaxed, welcoming atmosphere.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. Menu (High-Level) -->
+    <section id="menu" class="py-20 px-4 sm:px-6 lg:px-8 bg-white reveal-on-scroll">
+        <div class="max-w-7xl mx-auto text-center mb-16">
+            <h2 class="text-sm font-bold text-brand-sage uppercase tracking-wider mb-2" data-i18n="menu_tag">Culinary Delights</h2>
+            <h3 class="text-3xl md:text-4xl font-bold text-brand-dark" data-i18n="menu_title">A Taste of Three Worlds</h3>
+            <p class="mt-4 text-lg text-brand-dark/70 max-w-2xl mx-auto" data-i18n="menu_desc">Explore our carefully curated categories, designed to satisfy every palate.</p>
+        </div>
+
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+            
+            <!-- Category 1: Indian -->
+            <div class="group relative rounded-2xl overflow-hidden shadow-lg h-96 cursor-pointer">
+                <img src="https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=800&q=80" alt="Indian Cuisine" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                <div class="absolute inset-0 bg-gradient-to-t from-brand-dark/90 via-brand-dark/40 to-transparent"></div>
+                <div class="absolute bottom-0 left-0 p-8 w-full">
+                    <h4 class="text-3xl font-bold text-white mb-2" data-i18n="menu_indian">Indian</h4>
+                    <div class="w-12 h-1 bg-brand-terracotta transition-all duration-300 group-hover:w-full"></div>
+                </div>
+            </div>
+
+            <!-- Category 2: Asian -->
+            <div class="group relative rounded-2xl overflow-hidden shadow-lg h-96 cursor-pointer">
+                <img src="https://landingspace.github.io/Webspace/JoyCafe/src/images/indian_cuisine.jpg?auto=format&fit=crop&w=800&q=80" alt="Asian Cuisine" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                <div class="absolute inset-0 bg-gradient-to-t from-brand-dark/90 via-brand-dark/40 to-transparent"></div>
+                <div class="absolute bottom-0 left-0 p-8 w-full">
+                    <h4 class="text-3xl font-bold text-white mb-2" data-i18n="menu_asian">Asian</h4>
+                    <div class="w-12 h-1 bg-brand-sage transition-all duration-300 group-hover:w-full"></div>
+                </div>
+            </div>
+
+            <!-- Category 3: Western -->
+            <div class="group relative rounded-2xl overflow-hidden shadow-lg h-96 cursor-pointer">
+                <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80" alt="Western Cuisine" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                <div class="absolute inset-0 bg-gradient-to-t from-brand-dark/90 via-brand-dark/40 to-transparent"></div>
+                <div class="absolute bottom-0 left-0 p-8 w-full">
+                    <h4 class="text-3xl font-bold text-white mb-2" data-i18n="menu_western">Western</h4>
+                    <div class="w-12 h-1 bg-brand-wood transition-all duration-300 group-hover:w-full"></div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- 4. Amenities -->
+    <section class="py-16 bg-brand-wood text-brand-sand reveal-on-scroll">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h3 class="text-2xl md:text-3xl font-bold mb-10" data-i18n="amenities_title">Rest & Recharge</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="flex flex-col items-center">
+                    <svg class="w-12 h-12 mb-4 text-brand-sage" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"></path></svg>
+                    <h4 class="text-xl font-bold mb-2" data-i18n="amenities_wifi">Free Wi-Fi</h4>
+                    <p class="text-brand-sand/80 text-sm" data-i18n="amenities_wifi_desc">Stay connected while you unwind.</p>
+                </div>
+                <div class="flex flex-col items-center">
+                    <svg class="w-12 h-12 mb-4 text-brand-sage" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <h4 class="text-xl font-bold mb-2" data-i18n="amenities_parking">Spacious Parking</h4>
+                    <p class="text-brand-sand/80 text-sm" data-i18n="amenities_parking_desc">Ample space for your vehicles, safe and secure.</p>
+                </div>
+                <div class="flex flex-col items-center">
+                    <svg class="w-12 h-12 mb-4 text-brand-sage" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
+                    <h4 class="text-xl font-bold mb-2" data-i18n="amenities_washroom">Clean Facilities</h4>
+                    <p class="text-brand-sand/80 text-sm" data-i18n="amenities_washroom_desc">Hygienic restrooms for a comfortable stopover.</p>
+                </div>
+            </div>
+            <p class="mt-10 text-lg italic opacity-90" data-i18n="amenities_summary">Perfect for tourists and travelers needing a comfortable break on their journey.</p>
+        </div>
+    </section>
+
+    <!-- 5. Events & Parties -->
+    <section id="events" class="py-20 px-4 sm:px-6 lg:px-8 bg-brand-sand reveal-on-scroll">
+        <div class="max-w-4xl mx-auto text-center">
+            <span class="inline-block p-3 bg-brand-sage/20 rounded-full mb-4">
+                <svg class="w-8 h-8 text-brand-sage" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 15.546c-.523 0-1.046.151-1.5.454a2.704 2.704 0 01-3 0 2.704 2.704 0 00-3 0 2.704 2.704 0 01-3 0 2.704 2.704 0 00-3 0 2.704 2.704 0 01-3 0 2.701 2.701 0 00-1.5-.454M9 6v2m3-2v2m3-2v2M9 3h.01M12 3h.01M15 3h.01M21 21v-7a2 2 0 00-2-2H5a2 2 0 00-2 2v7h18zm-3-9v-2a2 2 0 00-2-2H8a2 2 0 00-2 2v2h12z"></path></svg>
+            </span>
+            <h2 class="text-3xl md:text-5xl font-bold text-brand-dark mb-6" data-i18n="events_title">Host Your Special Moments Here</h2>
+            <p class="text-lg text-brand-dark/80 mb-10 leading-relaxed" data-i18n="events_desc">
+                Whether it's a joy-filled birthday party or a professional gathering, Joy Cafe offers the perfect tranquil backdrop. Our serene location and excellent service ensure your event is memorable.
+            </p>
+            <a href="https://wa.me/919560912771?text=Hi%20Joy%20Cafe%2C%20I%20would%20like%20to%20make%20a%20booking%20at%20%5Btime%5D%20on%20%5Bdate%5D%20for%20%5BX%5D%20people." 
+               target="_blank" rel="noopener noreferrer"
+               class="inline-flex items-center space-x-2 bg-[#25D366] text-white font-bold px-8 py-4 rounded-full shadow-lg hover:bg-[#128C7E] transition-colors duration-300 transform hover:-translate-y-1">
+                <!-- WhatsApp SVG -->
+                <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+                <span data-i18n="events_btn">Book Your Event via WhatsApp</span>
+            </a>
+        </div>
+    </section>
+
+    <!-- 6. Testimonials (Auto-scrolling Carousel) -->
+    <section class="py-16 bg-white reveal-on-scroll overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10 text-center">
+            <h2 class="text-3xl font-bold text-brand-dark" data-i18n="reviews_title">What Our Guests Say</h2>
+        </div>
+        
+        <div class="carousel-container w-full py-4">
+            <div class="carousel-track flex gap-8 px-4" id="testimonialTrack">
+                
+                <!-- Review 1 (English) -->
+                <div class="testimonial-card w-80 md:w-96 bg-brand-sand rounded-xl p-6 shadow-sm border border-gray-100 flex-shrink-0">
+                    <div class="flex items-center mb-4 text-yellow-400">
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                    </div>
+                    <p class="text-brand-dark/80 italic mb-4" data-i18n="review_1_text">
+                        "Stopping at Joy Cafe was the highlight of our road trip. The ambiance is incredibly peaceful, completely removing you from the chaos of the road. We tried the Asian section and it was authentic and delicious. The clean washrooms were a huge plus for our family."
+                    </p>
+                    <p class="font-bold text-brand-dark">- Sarah Jenkins</p>
+                </div>
+
+                <!-- Review 2 (Hindi) -->
+                <div class="testimonial-card w-80 md:w-96 bg-brand-sand rounded-xl p-6 shadow-sm border border-gray-100 flex-shrink-0">
+                    <div class="flex items-center mb-4 text-yellow-400">
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                    </div>
+                    <p class="text-brand-dark/80 italic mb-4 font-hindi" data-i18n="review_2_text">
+                        "शहर के शोर-शराबे से दूर यह जगह एक स्वर्ग जैसी है। यहाँ का भारतीय खाना बहुत ही स्वादिष्ट था, बिल्कुल घर जैसा स्वाद। डेना जी का व्यवहार बहुत अच्छा है। पार्किंग की अच्छी सुविधा है।"
+                    </p>
+                    <p class="font-bold text-brand-dark">- Rahul Sharma</p>
+                </div>
+
+                <!-- Review 3 (Bodo) -->
+                <div class="testimonial-card w-80 md:w-96 bg-brand-sand rounded-xl p-6 shadow-sm border border-gray-100 flex-shrink-0">
+                    <div class="flex items-center mb-4 text-yellow-400">
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                    </div>
+                    <!-- Placeholder tags for Bodo dialect translation as requested -->
+                    <p class="text-brand-dark/80 italic mb-4" data-i18n="review_3_text">
+                        "Khulumbai! Joy Cafe ayw jwbwd mwjang jaiga. Janai-lwnai fwrabw gwthau gwthau. Dena adai ni onnai arw jothon lwnai a bikhakou gojwn hwdwng. WiFi arw parking fwrbw mwjang. Sabaikhor!"
+                    </p>
+                    <p class="font-bold text-brand-dark">- Ansumwi Basumatary</p>
+                </div>
+                
+                <!-- Duplicating items for seamless loop via JS later -->
+            </div>
+        </div>
+    </section>
+
+    <!-- 7. Location & Footer -->
+    <footer id="location" class="bg-brand-dark text-brand-sand pt-16 border-t-[8px] border-brand-terracotta reveal-on-scroll">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
+                
+                <!-- Info -->
+                <div>
+                    <h2 class="text-3xl font-bold mb-6 text-white" data-i18n="footer_title">Visit Joy Cafe</h2>
+                    
+                    <div class="mb-6 flex items-start space-x-4">
+                        <svg class="w-6 h-6 text-brand-terracotta flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.243-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        <div>
+                            <h4 class="font-bold text-white mb-1" data-i18n="footer_address_title">Address</h4>
+                            <p class="text-brand-sand/80" data-i18n="footer_address">Kathalguri, Udalguri,<br>Assam 784509<br>(Near Asboford Academy)</p>
+                            <a href="https://maps.app.goo.gl/wuhPbxCHPL7eATmZ9" target="_blank" class="inline-block mt-2 text-brand-terracotta hover:text-brand-sand transition-colors font-medium border-b border-brand-terracotta" data-i18n="footer_directions">Get Directions</a>
+                        </div>
+                    </div>
+
+                    <div class="mb-6 flex items-start space-x-4">
+                        <svg class="w-6 h-6 text-brand-terracotta flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <div>
+                            <h4 class="font-bold text-white mb-1" data-i18n="footer_hours_title">Opening Hours</h4>
+                            <p class="text-brand-sand/80" data-i18n="footer_hours_days">Mon - Sat: 8:30 AM to 8:00 PM</p>
+                            <p class="text-red-400 text-sm mt-1" data-i18n="footer_hours_closed">Closed on Sundays</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Map -->
+                <div class="w-full h-80 rounded-xl overflow-hidden shadow-lg bg-gray-800">
+                    <iframe src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d4416.70199384915!2d92.1063357!3d26.7426621!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x375b15005fd51f3d%3A0xeccff7ab7d82038b!2sJoy%20Cafe!5e1!3m2!1sen!2sin!4v1791270071713!5m2!1sen!2sin" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+                </div>
+            </div>
+            
+            <div class="border-t border-brand-sand/20 py-6 text-center text-sm text-brand-sand/60">
+                &copy; <span id="year"></span> Joy Cafe. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <!-- 8. Persistent Element (Floating WhatsApp) -->
+    <a href="https://wa.me/919560912771" target="_blank" rel="noopener noreferrer" class="fixed bottom-6 right-6 z-50 bg-[#25D366] text-white p-4 rounded-full shadow-2xl hover:bg-[#128C7E] hover:scale-110 transition-all duration-300 flex items-center justify-center animate-bounce" aria-label="Contact us on WhatsApp">
+        <svg class="w-8 h-8 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+        </svg>
+    </a>
+
+    <script>
+        // Set current year in footer
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        // -----------------------------------------
+        // Mobile Menu Toggle Logic
+        // -----------------------------------------
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // Close mobile menu on link click
+        document.querySelectorAll('#mobileMenu a').forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden');
+            });
+        });
+
+        // -----------------------------------------
+        // Scroll Animation Logic (Intersection Observer)
+        // -----------------------------------------
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.15
+        };
+
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.reveal-on-scroll').forEach((el) => {
+            observer.observe(el);
+        });
+
+        // Sticky Navbar styling on scroll
+        const navbar = document.getElementById('navbar');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                navbar.classList.add('shadow-md');
+                navbar.classList.replace('bg-brand-sand/90', 'bg-white/95');
+            } else {
+                navbar.classList.remove('shadow-md');
+                navbar.classList.replace('bg-white/95', 'bg-brand-sand/90');
+            }
+        });
+
+        // -----------------------------------------
+        // Music Player Logic
+        // -----------------------------------------
+        const bgMusic = document.getElementById('bgMusic');
+        const musicToggle = document.getElementById('musicToggle');
+        const iconPlay = document.getElementById('icon-play');
+        const iconPause = document.getElementById('icon-pause');
+        let musicStarted = false;
+
+        function togglePlayPause() {
+            if (bgMusic.paused) {
+                bgMusic.play().then(() => {
+                    iconPlay.classList.add('hidden');
+                    iconPause.classList.remove('hidden');
+                    musicStarted = true;
+                }).catch(err => console.log("Audio play failed:", err));
+            } else {
+                bgMusic.pause();
+                iconPlay.classList.remove('hidden');
+                iconPause.classList.add('hidden');
+            }
+        }
+
+        musicToggle.addEventListener('click', togglePlayPause);
+
+        // Attempt autoplay on first user interaction (scroll or click)
+        function initAudio() {
+            if (!musicStarted) {
+                bgMusic.volume = 0.3; // low volume so it's peaceful
+                bgMusic.play().then(() => {
+                    iconPlay.classList.add('hidden');
+                    iconPause.classList.remove('hidden');
+                    musicStarted = true;
+                }).catch(err => {
+                    // Autoplay prevented by browser, require manual click
+                    console.log("Autoplay prevented. Manual interaction required.");
+                });
+                
+                // Remove listeners once attempted
+                window.removeEventListener('click', initAudio);
+                window.removeEventListener('scroll', initAudio);
+            }
+        }
+
+        window.addEventListener('click', initAudio, { once: true });
+        window.addEventListener('scroll', initAudio, { once: true });
+
+
+        // -----------------------------------------
+        // Infinite Carousel Setup
+        // -----------------------------------------
+        const track = document.getElementById('testimonialTrack');
+        // Duplicate content to create seamless loop
+        track.innerHTML += track.innerHTML;
+
+        // -----------------------------------------
+        // Language Switcher Logic & Dictionary
+        // -----------------------------------------
+        const langBtn = document.getElementById('langBtn');
+        const langMenu = document.getElementById('langMenu');
+        
+        langBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            langMenu.classList.toggle('show');
+        });
+
+        document.addEventListener('click', () => {
+            if (langMenu.classList.contains('show')) {
+                langMenu.classList.remove('show');
+            }
+        });
+
+        // Full Translation Dictionary (CRITICAL: Do not truncate)
+        const translations = {
+            en: {
+                flag: "🇬🇧",
+                code: "EN",
+                nav_title: "Joy Cafe",
+                nav_about: "About",
+                nav_menu: "Menu",
+                nav_events: "Events",
+                nav_location: "Location",
+                hero_headline: "Welcome to Joy Cafe.",
+                hero_subheadline: "Experience peace, nature, and exceptional food away from the city.",
+                hero_button: "Discover Our Menu",
+                about_tag: "Our Story",
+                about_title: "Meet Dena, The Heart of Joy Cafe",
+                about_p1: "Dena is a passionate cook whose love for the culinary arts began in his childhood. For him, cooking isn't just a profession; it's a profound joy found in feeding people and bringing smiles to their faces.",
+                about_p2: "Together with his wife, they dreamt of creating a sanctuary away from the hustle and bustle of city life. They built Joy Cafe as a haven where guests can truly experience peace.",
+                about_p3: "Here, surrounded by nature, you and your family can eat well, unwind, and enjoy good music in a relaxed, welcoming atmosphere.",
+                menu_tag: "Culinary Delights",
+                menu_title: "A Taste of Three Worlds",
+                menu_desc: "Explore our carefully curated categories, designed to satisfy every palate.",
+                menu_indian: "Indian",
+                menu_asian: "Asian",
+                menu_western: "Western",
+                amenities_title: "Rest & Recharge",
+                amenities_wifi: "Free Wi-Fi",
+                amenities_wifi_desc: "Stay connected while you unwind.",
+                amenities_parking: "Spacious Parking",
+                amenities_parking_desc: "Ample space for your vehicles, safe and secure.",
+                amenities_washroom: "Clean Facilities",
+                amenities_washroom_desc: "Hygienic restrooms for a comfortable stopover.",
+                amenities_summary: "Perfect for tourists and travelers needing a comfortable break on their journey.",
+                events_title: "Host Your Special Moments Here",
+                events_desc: "Whether it's a joy-filled birthday party or a professional gathering, Joy Cafe offers the perfect tranquil backdrop. Our serene location and excellent service ensure your event is memorable.",
+                events_btn: "Book Your Event via WhatsApp",
+                reviews_title: "What Our Guests Say",
+                review_1_text: "\"Stopping at Joy Cafe was the highlight of our road trip. The ambiance is incredibly peaceful, completely removing you from the chaos of the road. We tried the Asian section and it was authentic and delicious. The clean washrooms were a huge plus for our family.\"",
+                review_2_text: "\"शहर के शोर-शराबे से दूर यह जगह एक स्वर्ग जैसी है। यहाँ का भारतीय खाना बहुत ही स्वादिष्ट था, बिल्कुल घर जैसा स्वाद। डेना जी का व्यवहार बहुत अच्छा है। पार्किंग की अच्छी सुविधा है।\"",
+                review_3_text: "\"Khulumbai! Joy Cafe ayw jwbwd mwjang jaiga. Janai-lwnai fwrabw gwthau gwthau. Dena adai ni onnai arw jothon lwnai a bikhakou gojwn hwdwng. WiFi arw parking fwrbw mwjang. Sabaikhor!\"",
+                footer_title: "Visit Joy Cafe",
+                footer_address_title: "Address",
+                footer_address: "Kathalguri, Udalguri,<br>Assam 784509<br>(Near Asboford Academy)",
+                footer_directions: "Get Directions",
+                footer_hours_title: "Opening Hours",
+                footer_hours_days: "Mon - Sat: 8:30 AM to 8:00 PM",
+                footer_hours_closed: "Closed on Sundays"
+            },
+            hi: {
+                flag: "🇮🇳",
+                code: "HI",
+                nav_title: "जॉय कैफे",
+                nav_about: "हमारे बारे में",
+                nav_menu: "मेन्यू",
+                nav_events: "कार्यक्रम",
+                nav_location: "स्थान",
+                hero_headline: "जॉय कैफे में आपका स्वागत है।",
+                hero_subheadline: "शहर से दूर शांति, प्रकृति और बेहतरीन भोजन का अनुभव करें।",
+                hero_button: "हमारा मेन्यू देखें",
+                about_tag: "हमारी कहानी",
+                about_title: "मिलिए डेना से, जॉय कैफे की जान",
+                about_p1: "डेना एक भावुक रसोइया हैं, जिन्हें बचपन से ही खाना पकाने का शौक रहा है। उनके लिए, खाना पकाना सिर्फ एक पेशा नहीं है; लोगों को खिलाने और उनके चेहरों पर मुस्कान लाने में उन्हें गहरी खुशी मिलती है।",
+                about_p2: "अपनी पत्नी के साथ मिलकर, उन्होंने शहर की भागदौड़ से दूर एक शांत जगह बनाने का सपना देखा। उन्होंने जॉय कैफे को एक ऐसे आश्रय के रूप में बनाया जहां मेहमान वास्तव में शांति का अनुभव कर सकें।",
+                about_p3: "यहाँ, प्रकृति के बीच, आप और आपका परिवार एक आरामदायक, स्वागत करने वाले माहौल में अच्छा खा सकते हैं, आराम कर सकते हैं और अच्छे संगीत का आनंद ले सकते हैं।",
+                menu_tag: "स्वादिष्ट व्यंजन",
+                menu_title: "तीन दुनिया का स्वाद",
+                menu_desc: "हर स्वाद को संतुष्ट करने के लिए हमारी सावधानीपूर्वक तैयार की गई श्रेणियों का अन्वेषण करें।",
+                menu_indian: "भारतीय",
+                menu_asian: "एशियाई",
+                menu_western: "पश्चिमी",
+                amenities_title: "आराम और रिचार्ज",
+                amenities_wifi: "मुफ्त वाई-फाई",
+                amenities_wifi_desc: "आराम करते समय जुड़े रहें।",
+                amenities_parking: "बड़ी पार्किंग",
+                amenities_parking_desc: "आपके वाहनों के लिए पर्याप्त जगह, सुरक्षित और संरक्षित।",
+                amenities_washroom: "स्वच्छ सुविधाएँ",
+                amenities_washroom_desc: "आरामदायक ठहराव के लिए स्वच्छ शौचालय।",
+                amenities_summary: "पर्यटकों और यात्रियों के लिए एकदम सही जिन्हें अपनी यात्रा में आरामदायक ब्रेक की आवश्यकता है।",
+                events_title: "अपने खास पलों का यहाँ जश्न मनाएँ",
+                events_desc: "चाहे वह खुशी से भरी जन्मदिन की पार्टी हो या कोई पेशेवर बैठक, जॉय कैफे एक आदर्श शांत पृष्ठभूमि प्रदान करता है। हमारा शांत स्थान और उत्कृष्ट सेवा सुनिश्चित करती है कि आपका कार्यक्रम यादगार हो।",
+                events_btn: "WhatsApp के जरिए अपना इवेंट बुक करें",
+                reviews_title: "हमारे मेहमान क्या कहते हैं",
+                review_1_text: "\"जॉय कैफे में रुकना हमारे रोड ट्रिप का सबसे अच्छा हिस्सा था। यहाँ का माहौल बेहद शांतिपूर्ण है, जो आपको सड़क की अराजकता से पूरी तरह दूर कर देता है। हमने एशियाई खाना ट्राई किया और वह बहुत ही प्रामाणिक और स्वादिष्ट था। साफ शौचालय हमारे परिवार के लिए एक बड़ा प्लस था।\"",
+                review_2_text: "\"शहर के शोर-शराबे से दूर यह जगह एक स्वर्ग जैसी है। यहाँ का भारतीय खाना बहुत ही स्वादिष्ट था, बिल्कुल घर जैसा स्वाद। डेना जी का व्यवहार बहुत अच्छा है। पार्किंग की अच्छी सुविधा है।\"",
+                review_3_text: "\"Khulumbai! Joy Cafe ayw jwbwd mwjang jaiga. Janai-lwnai fwrabw gwthau gwthau. Dena adai ni onnai arw jothon lwnai a bikhakou gojwn hwdwng. WiFi arw parking fwrbw mwjang. Sabaikhor!\"",
+                footer_title: "जॉय कैफे आएं",
+                footer_address_title: "पता",
+                footer_address: "कठलगुरी, उदलगुरी,<br>असम 784509<br>(एस्बोफोर्ड अकादमी के पास)",
+                footer_directions: "दिशा-निर्देश प्राप्त करें",
+                footer_hours_title: "खुलने का समय",
+                footer_hours_days: "सोम - शनि: सुबह 8:30 से रात 8:00 बजे तक",
+                footer_hours_closed: "रविवार को बंद"
+            },
+            brx: { // Bodo Dialect - Using provided placeholders where direct translation isn't available, mixed with Bodo phrases researched
+                flag: "🇮🇳",
+                code: "Bodo",
+                nav_title: "Joy Cafe",
+                nav_about: "[About Us]",
+                nav_menu: "[Menu]",
+                nav_events: "[Events]",
+                nav_location: "[Location]",
+                hero_headline: "Khulumbai! Joy Cafe ao Ador Khalamnai.",
+                hero_subheadline: "Nogor niprai gajanao gwjwn, mwnabili arw gwthau aadar amwkhw.",
+                hero_button: "[Discover Our Menu]",
+                about_tag: "[Our Story]",
+                about_title: "[Meet Dena, The Heart of Joy Cafe]",
+                about_p1: "[Dena is a passionate cook whose love for the culinary arts began in his childhood. For him, cooking isn't just a profession; it's a profound joy found in feeding people and bringing smiles to their faces.]",
+                about_p2: "[Together with his wife, they dreamt of creating a sanctuary away from the hustle and bustle of city life. They built Joy Cafe as a haven where guests can truly experience peace.]",
+                about_p3: "[Here, surrounded by nature, you and your family can eat well, unwind, and enjoy good music in a relaxed, welcoming atmosphere.]",
+                menu_tag: "[Culinary Delights]",
+                menu_title: "[A Taste of Three Worlds]",
+                menu_desc: "[Explore our carefully curated categories, designed to satisfy every palate.]",
+                menu_indian: "[Indian]",
+                menu_asian: "[Asian]",
+                menu_western: "[Western]",
+                amenities_title: "[Rest & Recharge]",
+                amenities_wifi: "Free Wi-Fi",
+                amenities_wifi_desc: "[Stay connected while you unwind.]",
+                amenities_parking: "[Spacious Parking]",
+                amenities_parking_desc: "[Ample space for your vehicles, safe and secure.]",
+                amenities_washroom: "[Clean Facilities]",
+                amenities_washroom_desc: "[Hygienic restrooms for a comfortable stopover.]",
+                amenities_summary: "[Perfect for tourists and travelers needing a comfortable break on their journey.]",
+                events_title: "[Host Your Special Moments Here]",
+                events_desc: "[Whether it's a joy-filled birthday party or a professional gathering, Joy Cafe offers the perfect tranquil backdrop. Our serene location and excellent service ensure your event is memorable.]",
+                events_btn: "WhatsApp ni gejerjwng book khalam",
+                reviews_title: "[What Our Guests Say]",
+                review_1_text: "\"[Stopping at Joy Cafe was the highlight of our road trip. The ambiance is incredibly peaceful, completely removing you from the chaos of the road. We tried the Asian section and it was authentic and delicious. The clean washrooms were a huge plus for our family.]\"",
+                review_2_text: "\"[शहर के शोर-शराबे से दूर यह जगह एक स्वर्ग जैसी है। यहाँ का भारतीय खाना बहुत ही स्वादिष्ट था, बिल्कुल घर जैसा स्वाद। डेना जी का व्यवहार बहुत अच्छा है। पार्किंग की अच्छी सुविधा है।]\"",
+                review_3_text: "\"Khulumbai! Joy Cafe ayw jwbwd mwjang jaiga. Janai-lwnai fwrabw gwthau gwthau. Dena adai ni onnai arw jothon lwnai a bikhakou gojwn hwdwng. WiFi arw parking fwrbw mwjang. Sabaikhor!\"",
+                footer_title: "Joy Cafe ao fwi",
+                footer_address_title: "Thikana",
+                footer_address: "Kathalguri, Udalguri,<br>Assam 784509<br>(Asboford Academy ni khatiyao)",
+                footer_directions: "Lama Nagirnai",
+                footer_hours_title: "Khewbai Som",
+                footer_hours_days: "Sombar - Sonibar: 8:30 AM niprai 8:00 PM sim",
+                footer_hours_closed: "Rbibarao bondo thayo"
+            }
+        };
+
+        // Function to apply translation
+        function setLanguage(langCode) {
+            if (!translations[langCode]) return;
+            
+            const content = translations[langCode];
+            
+            // Update button UI
+            document.getElementById('currentLangFlag').textContent = content.flag;
+            document.getElementById('currentLangText').textContent = content.code;
+            
+            // Update all translatable elements
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (content[key]) {
+                    // Check if it contains HTML (like <br>)
+                    if (content[key].includes('<')) {
+                        el.innerHTML = content[key];
+                    } else {
+                        el.textContent = content[key];
+                    }
+                }
+            });
+
+            // Handle special duplicated carousel items for dynamic updates
+            // Re-render the track to ensure all duplicates get the new language
+            const originalCards = document.querySelectorAll('.testimonial-card');
+            // Update text in all cards (including duplicates)
+            originalCards.forEach(card => {
+                const pTags = card.querySelectorAll('p[data-i18n]');
+                pTags.forEach(p => {
+                    const key = p.getAttribute('data-i18n');
+                    if (content[key]) p.textContent = content[key];
+                });
+            });
+            
+            // Update HTML lang attribute
+            document.documentElement.lang = langCode === 'brx' ? 'en' : langCode; // Fallback lang for screen readers if brx not supported
+        }
+
+        // Initialize language based on browser preference
+        function initLanguage() {
+            const browserLang = navigator.language.slice(0, 2).toLowerCase();
+            if (browserLang === 'hi') {
+                setLanguage('hi');
+            } else {
+                setLanguage('en'); // Default fallback
+            }
+        }
+
+        // Run on load
+        initLanguage();
+
+    </script>
+</body>
+</html>
